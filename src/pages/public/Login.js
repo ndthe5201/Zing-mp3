@@ -6,6 +6,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
 } from "firebase/auth";
+import axios from "axios";
 import { auth } from "../../FireBase/FireBaseConfig";
 import { addDoc, collection } from "firebase/firestore";
 import { db } from "../../FireBase/FireBaseConfig";
@@ -71,24 +72,26 @@ const Login = () => {
 
   const signIn = async () => {
     try {
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-      const user = userCredential.user;
-      console.log(user);
-      // return true;
-      alert("Đăng nhập thành công");
-      setIsModalOpen(false);
-      setShow(!show);
+        const response = await axios.post("http://localhost:5000/user/login", {
+            email: email,
+            password: password
+        });
+        
+        if (response.data.status === 200) {
+            sessionStorage.setItem("token", response.data.data.token);
+            sessionStorage.setItem("refreshToken", response.data.data.refreshToken);
+            alert("Đăng nhập thành công");
+            setIsModalOpen(false);
+            setShow(!show);
+        } else {
+            throw new Error(response.data.message);
+        }
     } catch (error) {
-      alert("Đăng nhập thất bại");
-      document.getElementById("email").value = "";
-      document.getElementById("password").value = "";
-      return { error: error.message };
+        alert("Đăng nhập thất bại: " + error.message);
+        document.getElementById("email").value = "";
+        document.getElementById("password").value = "";
     }
-  };
+};
 
   const handleCancel = () => {
     setIsModalOpen(false);
@@ -96,13 +99,14 @@ const Login = () => {
 
   const signOut = async () => {
     try {
-      await signOut(auth);
-      setShow(false);
-      return true;
+        sessionStorage.removeItem("token");
+        sessionStorage.removeItem("refreshToken");
+        setShow(false);
+        return true;
     } catch (error) {
-      return false;
+        return false;
     }
-  };
+};
 
   useEffect(() => {
     const uid = localStorage.getItem("uid");
